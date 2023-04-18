@@ -1,7 +1,14 @@
 from django.urls import path
-#import views for current module
+# import views for current module
 from . import views
 
 urlpatterns = [
-    path("", views.index, name="index") #route for index
+    # ex: /polls/
+    path("", views.index, name="index"),  # route for index
+    # ex: /polls/5
+    path("<int:question_id>/", views.detail, name="detail"),
+    # ex: /polls/r/results
+    path("<int:question_id>/results/", views.results, name="results"),
+    # ex: /polls/e/vote
+    path("<int:question_id>/vote/", views.vote, name="vote"),
 ]
