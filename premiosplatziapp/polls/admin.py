@@ -1,4 +1,26 @@
 from django.contrib import admin
 from .models import Question, Choice
+
+
+class ChoiceInline(admin.TabularInline):
+    # Choices for questions, default 3
+    model = Choice
+    extra = 3
+
+
+class QuestionAdmin(admin.ModelAdmin):
+    # Set field order
+    fieldsets = [
+        (None, {"fields": ["question_text"]}),
+        ("Date information", {"fields": ["pub_date"]}),
+    ]
+    # Which are teh choices
+    inlines = [ChoiceInline]
+    list_display = ["question_text", "pub_date", "was_published_recently"]
+    list_filter = ["pub_date"]
+    search_fields = ["question_text"]
+
+
 # Register your models here.
-admin.site.register([Question, Choice]) #As a list
+# Add QuesrtionAdmin class
+admin.site.register(Question, QuestionAdmin)

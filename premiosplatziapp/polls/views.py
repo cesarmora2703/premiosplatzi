@@ -40,7 +40,7 @@ class IndexView(generic.ListView):
 
     def get_queryset(self):
         '''Return the las five published questions'''
-        #return Question.objects.order_by('-pub_date')[:5]
+        # return Question.objects.order_by('-pub_date')[:5]
         # Apply the order_by after filter the questions from dastabase
         return Question.objects.filter(pub_date__lte=timezone.now()).order_by('-pub_date')[:5]
 
@@ -48,6 +48,12 @@ class IndexView(generic.ListView):
 class DetailView(generic.DetailView):
     model = Question
     template_name = 'polls/details.html'
+
+    def get_queryset(self):
+        '''
+        Exclude question that's no published yet
+        '''
+        return Question.objects.filter(pub_date__lte=timezone.now())
 
 
 class ResultsView(generic.DetailView):

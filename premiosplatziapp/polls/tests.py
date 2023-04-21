@@ -10,6 +10,18 @@ from .models import Question
 # Testing recent posts published between a tionme window of one day.
 
 
+def create_question(question_text, days):
+    '''
+    Create a question with the given question text,
+    and published number of days offset from now,
+    negative for question in the past,
+    positive for question that will be published later.
+    '''
+    time = timezone.now() + datetime.timedelta(days=days)
+    # Create a question in the test database
+    return Question.objects.create(question_text=question_text, pub_date=time)
+
+
 class QuestionModelTests(TestCase):
     def test_was_published_recently_with_future_questions(self):
         '''This method return false for questions whose pub_date is in the future.'''
@@ -46,17 +58,6 @@ class QuestionModelTests(TestCase):
         self.assertIs(past_question.was_published_recently(), False)
 
 
-def create_question(question_text, days):
-    '''
-    Create a question with the given question test,
-    ans published the number of days offset to now,
-    negative for question in the past,
-    positive for question that will be published later.
-    '''
-    time = timezone.now() + datetime.timedelta(days)
-    return Question(question_text=question_text, pub_date=time).save()
-
-
 class QuestionIndexViewTest(TestCase):
     def test_no_questions(self):
         '''If there arent questionsm an appropiate message is displayed.'''
@@ -79,7 +80,7 @@ class QuestionIndexViewTest(TestCase):
     def test_questions_from_right_now(self):
         # Now
         time = timezone.now()
-        qnow = q = Question(
+        qnow = Question(
             question_text='Question right now', pub_date=time).save()
         response = self.client.get(reverse('polls:index'))
         self.assertEqual(response.status_code, 200)
@@ -88,7 +89,7 @@ class QuestionIndexViewTest(TestCase):
     def test_questions_from_more_than_one_day_old(self):
         # Yesterday, question from past must appears
         time = timezone.now() + timezone.timedelta(days=-1)
-        qnow = q = Question(
+        qnow = Question(
             question_text='Question from past', pub_date=time).save()
         response = self.client.get(reverse('polls:index'))
         self.assertEqual(response.status_code, 200)
@@ -100,7 +101,7 @@ class QuestionIndexViewTest(TestCase):
         just past questions must appear in /polls/index
         '''
         past_question = create_question('past_question', -30)
-        future_question = create_question('past_question', 30)
+        future_question = create_question('future_question', 30)
         response = self.client.get(reverse('polls:index'))
         self.assertQuerysetEqual(
             response.context['latest_question_list'],
@@ -127,8 +128,32 @@ class QuestionIndexViewTest(TestCase):
         '''
         future_question1 = create_question('future_question', 30)
         future_question2 = create_question('future_question', 3)
+        print(future_question1.__str__)
         response = self.client.get(reverse('polls:index'))
         self.assertQuerysetEqual(
             response.context['latest_question_list'],
             []
         )
+
+
+class QuestionDetailViewTests(TestCase):
+    def test_future_question(self):
+        '''
+        For a url of a future question is required,
+        error 404 must be issued.
+        '''
+        future_question = create_question('future_question', 30)
+        url = reverse("polls:detail", args=(future_question.pk,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_past_question(self):
+        '''
+        A detail view of any past question this must be
+        displayed.
+        '''
+        past_question = create_question(
+            question_text='past_question', days=-30)
+        url = reverse("polls:detail", args=(past_question.id,))
+        response = self.client.get(url)
+        self.assertContains(response, past_question.question_text)
